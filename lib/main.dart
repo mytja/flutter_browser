@@ -4,10 +4,13 @@ import 'package:flutter_browser/about.dart';
 import 'package:flutter_browser/widgets/mapper.dart';
 import 'package:guinea_html/guinea_html.dart' as guinea_html;
 import 'package:selectable/selectable.dart';
+import 'package:dart_vlc/dart_vlc.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   guinea_html.initializeLibrary();
+  await DartVLC.initialize();
+
   runApp(const MyApp());
 }
 
@@ -20,6 +23,10 @@ class MyApp extends StatelessWidget {
       title: 'FlutterBrowser',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        textTheme: const TextTheme(
+          bodyText1: TextStyle(fontSize: 14),
+          bodyText2: TextStyle(fontSize: 14),
+        ),
       ),
       home: const MyHomePage(title: 'FlutterBrowser'),
     );
@@ -28,6 +35,7 @@ class MyApp extends StatelessWidget {
 
 Future<List<Widget>> fetchAndRenderSite(
     BuildContext context, String url) async {
+  debugPrint("Hitting url $url");
   var response = await Dio().get(url);
   Map data = guinea_html.parseHTML(response.data);
   return mapToWidgets(context, data);
@@ -52,7 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_alert),
+            icon: const Icon(Icons.info),
             tooltip: 'Show Snackbar',
             onPressed: () {
               Navigator.push(
@@ -67,7 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: FutureBuilder(
         future: fetchAndRenderSite(
-            context, "https://cbracco.github.io/html5-test-page/"),
+            context, "https://mytja.github.io/html5-css3-test-page/"),
         builder: (BuildContext context, AsyncSnapshot snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
