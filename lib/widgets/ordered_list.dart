@@ -1,34 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_browser/widgets/mapper.dart';
 
-class GuineaUnorderedList extends StatelessWidget {
-  const GuineaUnorderedList({
-    Key? key,
-    required this.widgets,
-    required this.url,
-    required this.callback,
-    required this.css,
-  }) : super(key: key);
+class GuineaOrderedList extends StatelessWidget {
+  const GuineaOrderedList(
+      {Key? key,
+      required this.widgets,
+      required this.url,
+      required this.callback,
+      required this.css})
+      : super(key: key);
+
+  final Future<void> Function(String type, Map data) callback;
 
   final List widgets;
   final String url;
   final List css;
-  final Future<void> Function(String type, Map data) callback;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 30, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: widgets.map((w) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '\u2022',
-                style: TextStyle(
+              Text(
+                "${widgets.indexOf(w) + 1}.",
+                style: const TextStyle(
                   fontSize: 16,
                   height: 1.55,
                 ),
@@ -46,7 +47,9 @@ class GuineaUnorderedList extends StatelessWidget {
                 ),
                 builder: (BuildContext context, AsyncSnapshot snapshot) {
                   if (!snapshot.hasData) return const SizedBox();
-                  return Column(children: snapshot.data);
+                  return Column(
+                    children: snapshot.data,
+                  );
                 },
               ),
             ],

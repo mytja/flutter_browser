@@ -1,18 +1,25 @@
-import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_browser/about.dart';
-import 'package:flutter_browser/widgets/mapper.dart';
+import 'package:flutter_browser/widgets/iframe.dart';
 import 'package:guinea_html/guinea_html.dart' as guinea_html;
 import 'package:selectable/selectable.dart';
 import 'package:dart_vlc/dart_vlc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  guinea_html.initializeLibrary();
-  await DartVLC.initialize();
+  await guinea_html.initializeLibrary();
+  await DartVLC.initialize(useFlutterNativeView: true);
+
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
 
   runApp(const MyApp());
 }
+
+//const TARGET_URL = "https://mytja.github.io/html5-css3-test-page/";
+//const TARGET_URL = "https://google.com";
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -33,14 +40,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-Future<List<Widget>> fetchAndRenderSite(
-    BuildContext context, String url) async {
-  debugPrint("Hitting url $url");
-  var response = await Dio().get(url);
-  Map data = guinea_html.parseHTML(response.data);
-  return mapToWidgets(context, data);
-}
-
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key, required this.title}) : super(key: key);
 
@@ -51,6 +50,26 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  //String url = "https://mytja.github.io/html5-css3-test-page/";
+  String url = "https://html.duckduckgo.com/lite";
+
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    _controller.text = url;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,6 +78,18 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
         actions: [
+          SizedBox(
+            width: 800,
+            child: TextField(
+              decoration: const InputDecoration(icon: Icon(Icons.search)),
+              controller: _controller,
+              onSubmitted: (String value) async {
+                setState(() {
+                  _controller.text = value;
+                });
+              },
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.info),
             tooltip: 'Show Snackbar',
@@ -73,30 +104,54 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: FutureBuilder(
-        future: fetchAndRenderSite(
-            context, "https://mytja.github.io/html5-css3-test-page/"),
-        builder: (BuildContext context, AsyncSnapshot snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                snapshot.error.toString(),
-              ),
-            );
-          }
-          return SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            //shrinkWrap: true,
-            child: Selectable(
-              selectWordOnDoubleTap: true,
-              child: Column(children: snapshot.data),
+      body: Form(
+        key: _formKey,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+          child: FutureBuilder(
+            future: fetchAndRenderSite(
+              context,
+              _controller.text,
+              _controller.text,
+              callback: (String type, Map data) async {
+                if (type == "newURL") {
+                  debugPrint("User pressed a link ${data['url']}");
+                  _controller.text = getCorrectURL(
+                    data["url"],
+                    _controller.text,
+                  );
+                  setState(() {});
+                } else if (type == "resetForm") {
+                  _formKey.currentState!.reset();
+                } else if (type == "URLchange") {
+                  debugPrint("Called URLchange with $data");
+                  _controller.text = data["url"];
+                }
+              },
             ),
-          );
-        },
+            builder: (BuildContext context, AsyncSnapshot snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    snapshot.error.toString(),
+                  ),
+                );
+              }
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                //shrinkWrap: true,
+                child: Selectable(
+                  selectWordOnDoubleTap: true,
+                  child: Column(children: snapshot.data),
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }

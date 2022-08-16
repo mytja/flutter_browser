@@ -69,6 +69,7 @@ extern "C" {
 #endif
 
 extern char* GetVersion();
+extern char* CSSToJSON(char* body);
 
 // HTMLToJSON the given HTML nodes into JSON content where each
 // HTML node is represented by the JsonNode structure.

@@ -4,12 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:dart_vlc/dart_vlc.dart';
 
 class GuineaAudio extends StatefulWidget {
-  const GuineaAudio({Key? key, this.url, this.width = 640, this.height = 360})
-      : super(key: key);
+  const GuineaAudio({Key? key, this.url}) : super(key: key);
 
   final String? url;
-  final int width;
-  final int height;
 
   @override
   State<GuineaAudio> createState() => _GuineaAudioState();
@@ -24,8 +21,6 @@ class _GuineaAudioState extends State<GuineaAudio> {
   Future<void> _init() async {
     _player = Player(
       id: 0,
-      videoDimensions: VideoDimensions(widget.width, widget.height),
-      registerTexture: !Platform.isWindows,
     );
     if (widget.url == null) {
       return;

@@ -40,6 +40,8 @@ dependencies:
   selectable: ^0.2.3
   dart_vlc: ^0.3.0
   google_fonts: ^3.0.1
+  flutter_svg: ^1.1.3
+  file_picker: ^4.6.1
 
 dev_dependencies:
   flutter_test:
