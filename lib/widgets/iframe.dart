@@ -1,16 +1,17 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_browser/constants/useragent.dart';
+import 'package:flutter_browser/widgets/css.dart';
 import 'package:flutter_browser/widgets/mapper.dart';
 import 'package:guinea_html/guinea_html.dart' as guinea_html;
 import 'package:selectable/selectable.dart';
 
-final dio =
-    Dio(BaseOptions(headers: {HttpHeaders.userAgentHeader: USER_AGENT}));
+final options = BaseOptions(headers: {HttpHeaders.userAgentHeader: USER_AGENT});
 
 String getCorrectURL(String url, String parentUrl) {
   debugPrint("Parsing URL $url to parent URL $parentUrl");
@@ -42,7 +43,9 @@ String getCorrectURL(String url, String parentUrl) {
 Future<List<Widget>> fetchAndRenderSite(
     BuildContext context, String parentUrl, String url,
     {int iFrameDepth = 1,
-    required Future<void> Function(String type, Map data) callback}) async {
+    required Future<void> Function(String type, Map data) callback,
+    String method = "get",
+    String requestBody = ""}) async {
   if (iFrameDepth > 2) {
     return [];
   }
@@ -50,10 +53,25 @@ Future<List<Widget>> fetchAndRenderSite(
   debugPrint("Hitting url $hitUrl");
   Response response;
   try {
-    response = await dio.get(hitUrl);
+    if (method == "get") {
+      response = await Dio(options).get(hitUrl);
+    } else if (method == "post") {
+      response = await Dio(options).post(
+        hitUrl,
+        data: requestBody,
+        options: Options(
+          headers: {
+            Headers.contentTypeHeader: "application/x-www-form-urlencoded",
+          },
+        ),
+      );
+    } else {
+      throw Exception("Not implemented");
+    }
   } catch (e) {
     return [];
   }
+  debugPrint("Done requesting");
   if (response.redirects.isNotEmpty) {
     hitUrl = response.redirects.last.location.toString();
     await callback(
@@ -67,7 +85,7 @@ Future<List<Widget>> fetchAndRenderSite(
     data,
     hitUrl,
     callback,
-    [],
+    CSSOptions([]),
     iFrameDepth: iFrameDepth,
   );
 }

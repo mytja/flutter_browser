@@ -2,8 +2,10 @@
 
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_browser/constants/settings.dart';
+import 'package:flutter_browser/widgets/css.dart';
 import 'package:flutter_browser/widgets/details.dart';
 import 'package:flutter_browser/widgets/htmldefinitions.dart';
 import 'package:flutter_browser/widgets/iframe.dart';
@@ -24,13 +26,14 @@ Future<List<Widget>> mapToWidgets(
   Map html,
   String url,
   Future<void> Function(String type, Map data) callback,
-  List css, {
+  CSSOptions css, {
   String? link,
   List<Widget>? row,
-  TextStyle? textStyle,
   int iFrameDepth = 1,
   bool useGestureDetector = false,
 }) async {
+  debugPrint("Starting mapping to widgets");
+
   List<Widget> widgets = [];
   List body = html["elements"];
   row ??= [];
@@ -38,144 +41,37 @@ Future<List<Widget>> mapToWidgets(
   double c_width = MediaQuery.of(context).size.width * 0.9;
 
   for (Map widget in body) {
+    List<String> classes = (widget["class"] ?? "").toString().split(" ");
+    List<String> ids = (widget["id"] ?? "").toString().split(" ");
+    CSSOptions cssOpts = css.cloneObject();
+    for (var i in classes) {
+      for (var c in cssOpts.css) {
+        if (c["name"] != ".$i") {
+          continue;
+        }
+        cssOpts = mapCSS(context, c, cssOpts);
+      }
+    }
+    for (var i in ids) {
+      for (var c in cssOpts.css) {
+        if (c["name"] != "#$i") {
+          continue;
+        }
+        cssOpts = mapCSS(context, c, cssOpts);
+      }
+    }
+
     switch (widget["name"].toString().toLowerCase()) {
       // Text widgets
       case H1:
-        widgets.add(
-          Row(
-            children: row!,
-          ),
-        );
-        row = [];
-        widgets.add(
-          Column(
-            children: [
-              const SizedBox(
-                height: 5,
-              ),
-              Row(
-                children: await mapToWidgets(
-                  context,
-                  widget,
-                  url,
-                  callback,
-                  css,
-                  textStyle: H1Style,
-                ),
-              ),
-            ],
-          ),
-        );
-        continue;
       case H2:
-        widgets.add(
-          Row(
-            children: row!,
-          ),
-        );
-        row = [];
-        widgets.add(
-          Column(
-            children: [
-              const SizedBox(
-                height: 5,
-              ),
-              Row(
-                children: await mapToWidgets(
-                  context,
-                  widget,
-                  url,
-                  callback,
-                  css,
-                  textStyle: H2Style,
-                ),
-              ),
-            ],
-          ),
-        );
-        continue;
       case H3:
-        widgets.add(
-          Row(
-            children: row!,
-          ),
-        );
-        row = [];
-        widgets.add(
-          Column(
-            children: [
-              const SizedBox(
-                height: 5,
-              ),
-              Row(
-                children: await mapToWidgets(
-                  context,
-                  widget,
-                  url,
-                  callback,
-                  css,
-                  textStyle: H3Style,
-                ),
-              ),
-            ],
-          ),
-        );
-        continue;
       case H4:
-        widgets.add(
-          Row(
-            children: row!,
-          ),
-        );
-        row = [];
-        widgets.add(
-          Column(
-            children: [
-              const SizedBox(
-                height: 5,
-              ),
-              Row(
-                children: await mapToWidgets(
-                  context,
-                  widget,
-                  url,
-                  callback,
-                  css,
-                  textStyle: H4Style,
-                ),
-              ),
-            ],
-          ),
-        );
-        continue;
       case H5:
-        widgets.add(
-          Row(
-            children: row!,
-          ),
-        );
-        row = [];
-        widgets.add(
-          Column(
-            children: [
-              const SizedBox(
-                height: 5,
-              ),
-              Row(
-                children: await mapToWidgets(
-                  context,
-                  widget,
-                  url,
-                  callback,
-                  css,
-                  textStyle: H5Style,
-                ),
-              ),
-            ],
-          ),
-        );
-        continue;
       case H6:
+        cssOpts.textStyle = cssOpts.textStyle.merge(
+          HeadingStyles[widget["name"].toString().toLowerCase()],
+        );
         widgets.add(
           Row(
             children: row!,
@@ -194,8 +90,7 @@ Future<List<Widget>> mapToWidgets(
                   widget,
                   url,
                   callback,
-                  css,
-                  textStyle: H6Style,
+                  cssOpts,
                 ),
               ),
             ],
@@ -203,7 +98,7 @@ Future<List<Widget>> mapToWidgets(
         );
         continue;
       case TEXT:
-        debugPrint("Rendering text $widget with style $textStyle");
+        debugPrint("Rendering text $widget with style ${cssOpts.textStyle}");
         Widget w;
         if (useGestureDetector) {
           w = GestureDetector(
@@ -215,191 +110,51 @@ Future<List<Widget>> mapToWidgets(
             },
             child: Text(
               widget["text"] ?? ComponentRenderError,
-              style: textStyle,
+              style: cssOpts.textStyle,
             ),
           );
         } else {
           w = Text(
             widget["text"] ?? ComponentRenderError,
-            style: textStyle,
+            style: cssOpts.textStyle,
           );
         }
         row!.add(w);
         continue;
       case B:
-        debugPrint("Rendering b $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Bold,
-        ));
-        continue;
       case STRONG:
-        debugPrint("Rendering strong $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Bold,
-        ));
-        continue;
       case EM:
-        debugPrint("Rendering em $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Italic,
-        ));
-        continue;
       case I:
-        debugPrint("Rendering i $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Italic,
-        ));
-        continue;
       case DFN:
-        debugPrint("Rendering dfn $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Italic,
-        ));
-        continue;
-      case CITE:
-        debugPrint("Rendering cite $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Italic,
-        ));
-        continue;
       case VAR:
-        debugPrint("Rendering var $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Italic,
-        ));
-        continue;
+      case CITE:
       case MARK:
-        debugPrint("Rendering mark $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Highlighted,
-        ));
-        continue;
       case U:
-        debugPrint("Rendering u $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Underlined,
-        ));
-        continue;
       case INS:
-        debugPrint("Rendering ins $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Underlined,
-        ));
-        continue;
       case DEL:
-        debugPrint("Rendering del $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Strikethrough,
-        ));
-        continue;
       case S:
-        debugPrint("Rendering s $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Strikethrough,
-        ));
-        continue;
       case SUP:
-        debugPrint("Rendering sup $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Superscript,
-        ));
-        continue;
       case SUB:
-        debugPrint("Rendering sub $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Subscript,
-        ));
-        continue;
       case SMALL:
-        debugPrint("Rendering small $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-          textStyle: Small,
-        ));
-        continue;
       case ABBR:
-        debugPrint("Rendering abbr $widget");
+      case KBD:
+      case SAMP:
+      case CODE:
+      case PRE:
+      case TIME:
+        cssOpts.textStyle = cssOpts.textStyle.merge(
+          textStyles[widget["name"].toString().toLowerCase()] ??
+              const TextStyle(),
+        );
+        debugPrint(
+          "Rendering ${widget["name"].toString().toLowerCase()} $widget",
+        );
         row!.addAll(await mapToWidgets(
           context,
           widget,
           url,
           callback,
-          css,
-          textStyle: DottedUnderline,
+          cssOpts,
         ));
         continue;
       case Q:
@@ -410,71 +165,9 @@ Future<List<Widget>> mapToWidgets(
           widget,
           url,
           callback,
-          css,
+          cssOpts,
         ));
         row.add(const Text('"'));
-        continue;
-      case TIME:
-        debugPrint("Rendering time $widget");
-        row!.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-        ));
-        continue;
-      case KBD:
-        debugPrint("Rendering kbd $widget");
-        row!.addAll(
-          await mapToWidgets(
-            context,
-            widget,
-            url,
-            callback,
-            css,
-            textStyle: CodeStyle,
-          ),
-        );
-        continue;
-      case SAMP:
-        debugPrint("Rendering samp $widget");
-        row!.addAll(
-          await mapToWidgets(
-            context,
-            widget,
-            url,
-            callback,
-            css,
-            textStyle: CodeStyle,
-          ),
-        );
-        continue;
-      case CODE:
-        debugPrint("Rendering code $widget");
-        row!.addAll(
-          await mapToWidgets(
-            context,
-            widget,
-            url,
-            callback,
-            css,
-            textStyle: CodeStyle,
-          ),
-        );
-        continue;
-      case PRE:
-        debugPrint("Rendering pre $widget");
-        row!.addAll(
-          await mapToWidgets(
-            context,
-            widget,
-            url,
-            callback,
-            css,
-            textStyle: CodeStyle,
-          ),
-        );
         continue;
       case BLOCKQUOTE:
         debugPrint("Rendering blockquote $widget");
@@ -496,7 +189,7 @@ Future<List<Widget>> mapToWidgets(
               widget,
               url,
               callback,
-              css,
+              cssOpts,
             ),
           ),
         );
@@ -508,6 +201,7 @@ Future<List<Widget>> mapToWidgets(
         row = [];
         continue;
       case ADDRESS:
+        cssOpts.textStyle = cssOpts.textStyle.merge(Italic);
         debugPrint("Rendering address $widget");
         row!.addAll(
           await mapToWidgets(
@@ -515,12 +209,12 @@ Future<List<Widget>> mapToWidgets(
             widget,
             url,
             callback,
-            css,
-            textStyle: Italic,
+            cssOpts,
           ),
         );
         continue;
       case A:
+        cssOpts.textStyle = cssOpts.textStyle.merge(AStyle);
         debugPrint("Rendering a $widget");
         row!.addAll(
           await mapToWidgets(
@@ -528,8 +222,7 @@ Future<List<Widget>> mapToWidgets(
             widget,
             url,
             callback,
-            css,
-            textStyle: AStyle,
+            cssOpts,
             link: widget["href"],
             useGestureDetector: true,
           ),
@@ -656,7 +349,7 @@ Future<List<Widget>> mapToWidgets(
           widget,
           url,
           callback,
-          css,
+          cssOpts,
         );
 
         widgets.add(
@@ -667,6 +360,9 @@ Future<List<Widget>> mapToWidgets(
               ),
               Row(
                 children: insiderRow,
+              ),
+              const SizedBox(
+                height: 5,
               ),
             ],
           ),
@@ -697,13 +393,14 @@ Future<List<Widget>> mapToWidgets(
           for (var i in detailsBody) {
             debugPrint("Trying to find summary on $i");
             if (i["name"].toString().toLowerCase() == SUMMARY) {
+              var titleCSSopts = cssOpts.cloneObject();
+              titleCSSopts.textStyle = titleCSSopts.textStyle.merge(H3Style);
               summary.addAll(await mapToWidgets(
                 context,
                 i,
                 url,
                 callback,
-                css,
-                textStyle: H3Style,
+                titleCSSopts,
               ));
               detailsBody.remove(i);
               break;
@@ -726,7 +423,7 @@ Future<List<Widget>> mapToWidgets(
             summary: summary,
             url: url,
             callback: callback,
-            css: css,
+            css: cssOpts,
           ),
         );
         continue;
@@ -794,7 +491,7 @@ Future<List<Widget>> mapToWidgets(
           url,
           widget["elements"],
           callback,
-          css,
+          cssOpts,
         );
         debugPrint("Rendering table $widget using $parsedTable");
         row!.add(GuineaTable(
@@ -803,11 +500,29 @@ Future<List<Widget>> mapToWidgets(
         continue;
 
       // Form widgets
+      case FORM:
+        formUrl = getCorrectURL(
+            (widget["attributes"] ?? {"action": ""})["action"] ?? "", url);
+        formMethod =
+            ((widget["attributes"] ?? {"method": ""})["method"] ?? "post")
+                .toString()
+                .toLowerCase();
+        debugPrint("Rendering form $widget with $formMethod and $formUrl");
+        widgets.addAll(await mapToWidgets(
+          context,
+          widget,
+          url,
+          callback,
+          cssOpts,
+        ));
+        continue;
       case INPUT:
         debugPrint("Rendering input $widget");
         row!.add(
           GuineaTextField(
             callback: callback,
+            height: cssOpts.height,
+            name: widget["attributes"]["name"] ?? "",
             type: widget["attributes"]["type"] ?? "text",
             id: widget["id"] ?? "",
             label: widget["attributes"] != null &&
@@ -824,6 +539,11 @@ Future<List<Widget>> mapToWidgets(
                 : "",
             disabled: widget["attributes"] != null &&
                 widget["attributes"]["disabled"] != null,
+            value: widget["attributes"] != null &&
+                    widget["attributes"]["value"] != null
+                ? widget["attributes"]["value"]
+                : "",
+            borderColor: cssOpts.borderColor,
           ),
         );
         continue;
@@ -837,6 +557,7 @@ Future<List<Widget>> mapToWidgets(
                 ? widget["attributes"]["type"]
                 : "text",
             id: widget["id"] ?? "",
+            height: cssOpts.height,
             text: widget["text"] != null
                 ? widget["text"]
                     .toString()
@@ -862,15 +583,21 @@ Future<List<Widget>> mapToWidgets(
         );
         row!.add(
           GuineaTextField(
-              callback: callback,
-              type: "textarea",
-              id: widget["id"] ?? "",
-              lines: lineCount ?? 1,
-              width: (width ?? 40) * 8,
-              label: widget["attributes"] != null &&
-                      widget["attributes"]["placeholder"] != null
-                  ? widget["attributes"]["placeholder"]
-                  : ""),
+            callback: callback,
+            type: "textarea",
+            id: widget["id"] ?? "",
+            name: widget["name"] ?? "",
+            lines: lineCount ?? 1,
+            width: (width ?? 40) * 8,
+            label: widget["attributes"] != null &&
+                    widget["attributes"]["placeholder"] != null
+                ? widget["attributes"]["placeholder"]
+                : "",
+            value: widget["attributes"] != null &&
+                    widget["attributes"]["value"] != null
+                ? widget["attributes"]["value"]
+                : "",
+          ),
         );
         continue;
       case SELECT:
@@ -893,7 +620,7 @@ Future<List<Widget>> mapToWidgets(
           widget,
           url,
           callback,
-          css,
+          cssOpts,
         ));
         row!.add(Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -921,7 +648,7 @@ Future<List<Widget>> mapToWidgets(
           widgets: elements,
           url: url,
           callback: callback,
-          css: css,
+          css: cssOpts,
         ));
 
         widgets.add(
@@ -953,7 +680,7 @@ Future<List<Widget>> mapToWidgets(
           widgets: elements,
           url: url,
           callback: callback,
-          css: css,
+          css: cssOpts,
         ));
 
         widgets.add(
@@ -967,39 +694,24 @@ Future<List<Widget>> mapToWidgets(
         continue;
 
       // Informative widgets (nothing to render)
-      case HTML:
-        debugPrint("Rendering html $widget");
-        widgets.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-        ));
-        continue;
+      case META:
+      case TITLE:
       case SCRIPT:
         continue;
       case STYLE:
-        css = parseCSS(widget["text"]);
+        //css.css = parseCSS(widget["text"]);
         continue;
       case LINK:
         if (widget["attributes"]["rel"] == "stylesheet") {
+          if (widget["href"] == null) {
+            continue;
+          }
           String cssUrl = getCorrectURL(widget["href"], url);
           debugPrint("Hitting CSS using $cssUrl");
-          var get = await dio.get(cssUrl);
-          css.addAll(parseCSS(get.data.toString()));
+          var get = await Dio().get(cssUrl);
+          css.css.addAll(parseCSS(get.data.toString()));
           debugPrint("Current CSS $css");
         }
-        continue;
-      case NOSCRIPT:
-        debugPrint("Rendering noscript $widget");
-        widgets.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-        ));
         continue;
       case SPAN:
         debugPrint("Rendering span $widget");
@@ -1008,94 +720,97 @@ Future<List<Widget>> mapToWidgets(
           widget,
           url,
           callback,
-          css,
-        ));
-        continue;
-      case HEAD:
-        debugPrint("Rendering head $widget");
-        widgets.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-        ));
-        continue;
-      case BODY:
-        debugPrint("Rendering body $widget");
-        widgets.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-        ));
-        continue;
-      case DIV:
-        debugPrint("Rendering div $widget");
-        widgets.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-        ));
-        continue;
-      case HEADER:
-        debugPrint("Rendering header $widget");
-        widgets.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-        ));
-        continue;
-      case FOOTER:
-        debugPrint("Rendering footer $widget");
-        widgets.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
+          cssOpts,
         ));
         continue;
       case ARTICLE:
-        debugPrint("Rendering article $widget");
-        widgets.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-        ));
-        continue;
       case MAIN:
-        debugPrint("Rendering main $widget");
-        widgets.addAll(await mapToWidgets(
-          context,
-          widget,
-          url,
-          callback,
-          css,
-        ));
-        continue;
       case SECTION:
-        debugPrint("Rendering section $widget");
+      case HEADER:
+      case FOOTER:
+      case HTML:
+      case NOSCRIPT:
+      case HEAD:
+      case BODY:
+        debugPrint("Rendering ${widget['name']} $widget");
         widgets.addAll(await mapToWidgets(
           context,
           widget,
           url,
           callback,
-          css,
+          cssOpts,
         ));
         continue;
-      case META:
-        // Meta tags shouldn't be rendered
+      case CENTER:
+        widgets.add(Row(
+          children: row!,
+        ));
+        row = [];
+        widgets.add(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                height: cssOpts.height?.toDouble(),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: cssOpts.top?.toDouble(),
+                    ),
+                    ...await mapToWidgets(
+                      context,
+                      widget,
+                      url,
+                      callback,
+                      cssOpts,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
         continue;
-      case TITLE:
-        // Title tags are just some kind of form of a meta tag, so they don't shouldn't be rendered
+      case DIV:
+        debugPrint("Rendering div $widget");
+        widgets.add(Row(children: row!));
+        row = [];
+        if (cssOpts.verticallyCenter) {
+          widgets.add(
+            SizedBox(
+              height: cssOpts.height?.toDouble(),
+              child: Center(
+                child: Column(
+                  children: await mapToWidgets(
+                    context,
+                    widget,
+                    url,
+                    callback,
+                    cssOpts,
+                  ),
+                ),
+              ),
+            ),
+          );
+          continue;
+        }
+        widgets.add(
+          SizedBox(
+            height: cssOpts.height?.toDouble(),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: await mapToWidgets(
+                context,
+                widget,
+                url,
+                callback,
+                cssOpts,
+              ),
+            ),
+          ),
+        );
         continue;
       default:
         if (widget["elements"] != null && widget["elements"].length != 0) {
@@ -1107,7 +822,7 @@ Future<List<Widget>> mapToWidgets(
             widget,
             url,
             callback,
-            css,
+            cssOpts,
           ));
           continue;
         }

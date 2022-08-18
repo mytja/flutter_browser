@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_browser/widgets/css.dart';
 import 'package:flutter_browser/widgets/mapper.dart';
 
 class GuineaUnorderedList extends StatelessWidget {
@@ -12,7 +13,7 @@ class GuineaUnorderedList extends StatelessWidget {
 
   final List widgets;
   final String url;
-  final List css;
+  final CSSOptions css;
   final Future<void> Function(String type, Map data) callback;
 
   @override

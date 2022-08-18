@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_browser/widgets/slider.dart';
 
+String formUrl = "";
+String formMethod = "";
 String checked = "";
+Map<String, TextEditingController> textEditingControllers = {};
 
 class GuineaTextField extends StatefulWidget {
   const GuineaTextField({
@@ -17,6 +20,10 @@ class GuineaTextField extends StatefulWidget {
     this.lines = 1,
     this.width = 400,
     this.disabled = false,
+    this.height,
+    this.name = "",
+    this.value = "",
+    this.borderColor = "",
   }) : super(key: key);
 
   final String label;
@@ -25,8 +32,12 @@ class GuineaTextField extends StatefulWidget {
   final bool isChecked;
   final int lines;
   final int width;
+  final int? height;
   final String text;
   final bool disabled;
+  final String name;
+  final String value;
+  final String borderColor;
 
   final Future<void> Function(String type, Map data) callback;
 
@@ -35,26 +46,31 @@ class GuineaTextField extends StatefulWidget {
 }
 
 class _GuineaTextFieldState extends State<GuineaTextField> {
-  late TextEditingController _controller;
-
   late bool isChecked;
   FilePickerResult? selectedFile;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
+    if (widget.name != "") {
+      textEditingControllers[widget.name] = TextEditingController();
+      if (widget.value != "") {
+        textEditingControllers[widget.name]?.text = widget.value;
+      }
+    }
     isChecked = widget.isChecked;
   }
 
   @override
   void dispose() {
     super.dispose();
-    _controller.dispose();
+    //textEditingControllers[widget.name]?.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    int? borderColor = int.tryParse(widget.borderColor);
+    debugPrint("border $borderColor ${widget.type}");
     if (widget.type == "checkbox") {
       return FormField(
         builder: (FormFieldState state) => Checkbox(
@@ -82,55 +98,84 @@ class _GuineaTextFieldState extends State<GuineaTextField> {
     } else if (widget.type == "submit" ||
         widget.type == "button" ||
         widget.type == "reset") {
-      return TextButton(
-        style: ButtonStyle(
-          backgroundColor: MaterialStateProperty.all<Color>(
-              widget.disabled ? Colors.grey : Colors.blue),
-          foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
+      //print("test ${widget.height}");
+      return SizedBox(
+        height: widget.height?.toDouble(),
+        child: TextButton(
+          style: ButtonStyle(
+            backgroundColor: MaterialStateProperty.all<Color>(
+                widget.disabled ? Colors.grey : Colors.blue),
+            foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
+          ),
+          onPressed: () async {
+            if (widget.disabled) {
+              return;
+            }
+            if (widget.type == "reset") {
+              await widget.callback("resetForm", {});
+            }
+            if (widget.type == "submit") {
+              await widget.callback("submitForm", {
+                "textFields": textEditingControllers,
+                "url": formUrl,
+                "method": formMethod,
+              });
+            }
+          },
+          child: Text(widget.text),
         ),
-        onPressed: () async {
-          if (widget.disabled) {
-            return;
-          }
-          if (widget.type == "reset") {
-            await widget.callback("resetForm", {});
-          }
-        },
-        child: Text(widget.text),
       );
+    } else if (widget.type == "hidden") {
+      return const SizedBox();
     } else if (widget.type == "range") {
       return GuineaSlider(
         value: int.parse(widget.text),
       );
     } else if (widget.type == "file") {
-      return Row(
-        children: [
-          TextButton(
-            onPressed: () async {
-              selectedFile = await FilePicker.platform.pickFiles();
-              setState(() {});
-            },
-            child: const Text("Select a file"),
-          ),
-          if (selectedFile != null)
-            for (var i in selectedFile!.files) Text(i.name),
-        ],
+      return SizedBox(
+        height: widget.height?.toDouble(),
+        child: Row(
+          children: [
+            TextButton(
+              onPressed: () async {
+                selectedFile = await FilePicker.platform.pickFiles();
+                setState(() {});
+              },
+              child: const Text("Select a file"),
+            ),
+            if (selectedFile != null)
+              for (var i in selectedFile!.files) Text(i.name),
+          ],
+        ),
       );
     }
 
     return SizedBox(
+      height: (widget.height ?? 20).toDouble() + 12,
       width: widget.width.toDouble(),
       child: FormField(
         builder: (FormFieldState state) => TextField(
+          onChanged: ((value) {
+            debugPrint("$textEditingControllers");
+          }),
           maxLines: widget.lines,
-          controller: _controller,
+          controller: textEditingControllers[widget.name],
           obscureText: widget.type == "password",
           keyboardType: widget.type == "number" ? TextInputType.number : null,
           inputFormatters: <TextInputFormatter>[
             if (widget.type == "number") FilteringTextInputFormatter.digitsOnly,
           ],
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(
+                color: Color(borderColor ?? 0xFF000000),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(
+                color: Color(borderColor ?? 0xFF000000),
+              ),
+            ),
             labelText: widget.label,
           ),
         ),

@@ -20,16 +20,19 @@ class _GuineaSliderState extends State<GuineaSlider> {
 
   @override
   Widget build(BuildContext context) {
-    return Slider(
-      value: _currentSliderValue,
-      max: 100,
-      divisions: 100,
-      label: _currentSliderValue.round().toString(),
-      onChanged: (double value) {
-        setState(() {
-          _currentSliderValue = value;
-        });
-      },
+    return SizedBox(
+      width: 300,
+      child: Slider(
+        value: _currentSliderValue,
+        max: 100,
+        divisions: 100,
+        label: _currentSliderValue.round().toString(),
+        onChanged: (double value) {
+          setState(() {
+            _currentSliderValue = value;
+          });
+        },
+      ),
     );
   }
 }

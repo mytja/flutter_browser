@@ -50,10 +50,12 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  //String url = "https://mytja.github.io/html5-css3-test-page/";
-  String url = "https://html.duckduckgo.com/lite";
+  String url = "https://mytja.github.io/html5-css3-test-page/";
+  //String url = "https://html.duckduckgo.com/lite";
+  String method = "get";
 
   late TextEditingController _controller;
+  String requestBody = "";
 
   @override
   void initState() {
@@ -84,6 +86,7 @@ class _MyHomePageState extends State<MyHomePage> {
               decoration: const InputDecoration(icon: Icon(Icons.search)),
               controller: _controller,
               onSubmitted: (String value) async {
+                method = "get";
                 setState(() {
                   _controller.text = value;
                 });
@@ -92,7 +95,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           IconButton(
             icon: const Icon(Icons.info),
-            tooltip: 'Show Snackbar',
+            tooltip: 'Show About page',
             onPressed: () {
               Navigator.push(
                 context,
@@ -114,6 +117,10 @@ class _MyHomePageState extends State<MyHomePage> {
               _controller.text,
               _controller.text,
               callback: (String type, Map data) async {
+                requestBody = "";
+                method = "get";
+
+                debugPrint("Called $type with $data in callback");
                 if (type == "newURL") {
                   debugPrint("User pressed a link ${data['url']}");
                   _controller.text = getCorrectURL(
@@ -126,8 +133,21 @@ class _MyHomePageState extends State<MyHomePage> {
                 } else if (type == "URLchange") {
                   debugPrint("Called URLchange with $data");
                   _controller.text = data["url"];
+                } else if (type == "submitForm") {
+                  method = data["method"];
+                  _controller.text = data["url"];
+                  List<String> formBody = [];
+                  for (String i in data["textFields"].keys) {
+                    formBody.add("$i=${data["textFields"][i].text}");
+                  }
+                  requestBody = formBody.join("&");
+                  debugPrint(
+                      "Using $method to hit ${_controller.text} with request body $requestBody");
+                  setState(() {});
                 }
               },
+              requestBody: requestBody,
+              method: method,
             ),
             builder: (BuildContext context, AsyncSnapshot snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {

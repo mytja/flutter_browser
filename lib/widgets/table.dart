@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_browser/widgets/css.dart';
 import 'package:flutter_browser/widgets/htmldefinitions.dart';
 import 'package:flutter_browser/widgets/mapper.dart';
 
@@ -7,7 +8,7 @@ Future<Map<String, dynamic>> parseHTMLTable(
     String url,
     List table,
     Future<void> Function(String type, Map data) callback,
-    List css) async {
+    CSSOptions css) async {
   Map<String, dynamic> m = {};
   List<List<Widget>> tableElements = [];
   List<Widget> head = [];
@@ -25,6 +26,8 @@ Future<Map<String, dynamic>> parseHTMLTable(
     } else if (i["name"].toString().toLowerCase() == THEAD) {
       for (var n in i["elements"]) {
         if (n["name"].toString().toLowerCase() == TR) {
+          var cssOpts = css.cloneObject();
+          cssOpts.textStyle = cssOpts.textStyle.merge(Bold);
           for (var x in n["elements"]) {
             head.add(
               Row(
@@ -33,8 +36,7 @@ Future<Map<String, dynamic>> parseHTMLTable(
                   x,
                   url,
                   callback,
-                  css,
-                  textStyle: Bold,
+                  cssOpts,
                 ),
               ),
             );
@@ -44,6 +46,8 @@ Future<Map<String, dynamic>> parseHTMLTable(
     } else if (i["name"].toString().toLowerCase() == TFOOT) {
       for (var n in i["elements"]) {
         if (n["name"].toString().toLowerCase() == TR) {
+          var cssOpts = css.cloneObject();
+          cssOpts.textStyle = cssOpts.textStyle.merge(Bold);
           for (var x in n["elements"]) {
             footer.add(
               Row(
@@ -52,8 +56,7 @@ Future<Map<String, dynamic>> parseHTMLTable(
                   x,
                   url,
                   callback,
-                  css,
-                  textStyle: Bold,
+                  cssOpts,
                 ),
               ),
             );
@@ -66,7 +69,7 @@ Future<Map<String, dynamic>> parseHTMLTable(
       for (var n in i["elements"]) {
         debugPrint("Current index in table rendering $index");
         if (n["name"].toString().toLowerCase() == TR) {
-          if (max > n["elements"].length) {
+          if (max < n["elements"].length) {
             max = n["elements"].length;
           }
           for (var x in n["elements"]) {
@@ -110,7 +113,7 @@ class GuineaTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("tabler $data");
+    debugPrint("tabler $data");
     return Column(
       children: [
         Center(child: Column(children: data["caption"] ?? [])),

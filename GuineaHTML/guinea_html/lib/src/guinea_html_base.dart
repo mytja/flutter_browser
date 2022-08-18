@@ -27,7 +27,11 @@ Future<void> initializeLibrary() async {
   String libraryPath;
 
   if (Platform.isLinux) {
-    if (await File(path.join(Directory.current.path, libPath, '$libName.so'))
+    if (await File(path.join(Directory.current.path, "lib", '$libName.so'))
+        .exists()) {
+      libraryPath = path.join(Directory.current.path, "lib", '$libName.so');
+    } else if (await File(
+            path.join(Directory.current.path, libPath, '$libName.so'))
         .exists()) {
       libraryPath = path.join(Directory.current.path, libPath, '$libName.so');
     } else if (await File(
@@ -76,7 +80,7 @@ Future<void> initializeLibrary() async {
     }
   } else if (Platform.isMacOS) {
     print(
-        "[WARNING] MacOS isn't supported at all by libguineahtml. It will most likely work, but you can't count on official support.");
+        "[WARNING] MacOS isn't supported at all by libguineahtml. It's posible that it's working, but you can't count on official support.");
     if (await File(path.join(Directory.current.path, libPath, '$libName.dylib'))
         .exists()) {
       libraryPath =
@@ -88,6 +92,8 @@ Future<void> initializeLibrary() async {
   } else {
     throw Exception("Unsupported platform");
   }
+
+  print("Using dynamic library $libraryPath");
 
   dynamicLibrary = ffi.DynamicLibrary.open(libraryPath);
 }

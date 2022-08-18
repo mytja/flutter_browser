@@ -1,1 +1,1 @@
-go build -o libguineahtml.so -buildmode=c-shared .
+go build -o libguineahtml.so -buildmode=c-shared -v .

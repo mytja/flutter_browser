@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_browser/widgets/css.dart';
 import 'package:flutter_browser/widgets/mapper.dart';
 
 class GuineaDetails extends StatefulWidget {
@@ -16,7 +17,7 @@ class GuineaDetails extends StatefulWidget {
   final Map body;
   final List<Widget> summary;
   final String url;
-  final List css;
+  final CSSOptions css;
 
   @override
   State<GuineaDetails> createState() => _GuineaDetailsState();
@@ -54,6 +55,7 @@ class _GuineaDetailsState extends State<GuineaDetails> {
                   widget.css,
                 ),
                 builder: (BuildContext context, AsyncSnapshot snapshot) {
+                  if (!snapshot.hasData) return const SizedBox();
                   return Column(children: snapshot.data);
                 },
               ),

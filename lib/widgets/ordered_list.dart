@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_browser/widgets/css.dart';
 import 'package:flutter_browser/widgets/mapper.dart';
 
 class GuineaOrderedList extends StatelessWidget {
@@ -14,7 +15,7 @@ class GuineaOrderedList extends StatelessWidget {
 
   final List widgets;
   final String url;
-  final List css;
+  final CSSOptions css;
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +31,7 @@ class GuineaOrderedList extends StatelessWidget {
               Text(
                 "${widgets.indexOf(w) + 1}.",
                 style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.55,
+                  fontSize: 20,
                 ),
               ),
               const SizedBox(

@@ -31,6 +31,9 @@ class _GuineaVideoPlayerState extends State<GuineaVideoPlayer> {
   @override
   void initState() {
     super.initState();
+    player.setUserAgent(
+      "Mozilla/5.0 (X11; Linux x86_64; rv:103.0) Gecko/20100101 Firefox/103.0",
+    );
     player.videoDimensions = VideoDimensions(widget.width, widget.height);
     if (mounted) {
       try {
@@ -52,25 +55,25 @@ class _GuineaVideoPlayerState extends State<GuineaVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return const GuineaNotImplementedWidget(
-      body: "Video DOES NOT WORK YET. It results in a crash.",
-    );
-    // return Platform.isWindows
-    //     ? NativeVideo(
-    //         player: player,
-    //         width: widget.width.toDouble(),
-    //         height: widget.height.toDouble(),
-    //         volumeThumbColor: Colors.blue,
-    //         volumeActiveColor: Colors.blue,
-    //         showControls: widget.controls,
-    //       )
-    //     : Video(
-    //         player: player,
-    //         width: widget.width.toDouble(),
-    //         height: widget.height.toDouble(),
-    //         volumeThumbColor: Colors.blue,
-    //         volumeActiveColor: Colors.blue,
-    //         showControls: widget.controls,
-    //       );
+    // return const GuineaNotImplementedWidget(
+    //   body: "Video DOES NOT WORK YET. It results in a crash.",
+    // );
+    return Platform.isWindows
+        ? NativeVideo(
+            player: player,
+            width: widget.width.toDouble(),
+            height: widget.height.toDouble(),
+            volumeThumbColor: Colors.blue,
+            volumeActiveColor: Colors.blue,
+            showControls: widget.controls,
+          )
+        : Video(
+            player: player,
+            width: widget.width.toDouble(),
+            height: widget.height.toDouble(),
+            volumeThumbColor: Colors.blue,
+            volumeActiveColor: Colors.blue,
+            showControls: widget.controls,
+          );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:core';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:ui';
@@ -80,6 +82,8 @@ const OPTION = "option";
 const OBJECT = "object";
 const SPAN = "span";
 const LINK = "link";
+const CENTER = "center";
+const FORM = "form";
 
 // http://zuga.net/articles/html-heading-elements
 const H1Style = TextStyle(fontSize: 32);
@@ -88,6 +92,16 @@ const H3Style = TextStyle(fontSize: 18.72);
 const H4Style = TextStyle(fontSize: 16);
 const H5Style = TextStyle(fontSize: 13.28);
 const H6Style = TextStyle(fontSize: 10.72);
+
+const Map<String, TextStyle> HeadingStyles = {
+  H1: H1Style,
+  H2: H2Style,
+  H3: H3Style,
+  H4: H4Style,
+  H5: H5Style,
+  H6: H6Style,
+};
+
 const AStyle = TextStyle(
   color: Colors.blue,
   decoration: TextDecoration.underline,
@@ -105,5 +119,28 @@ const Superscript = TextStyle(fontFeatures: [FontFeature.superscripts()]);
 const Subscript = TextStyle(fontFeatures: [FontFeature.subscripts()]);
 const Small = TextStyle(fontSize: 9);
 const Highlighted = TextStyle(backgroundColor: Colors.yellow);
+
+final Map<String, TextStyle> textStyles = {
+  B: Bold,
+  STRONG: Bold,
+  EM: Italic,
+  I: Italic,
+  DFN: Italic,
+  VAR: Italic,
+  CITE: Italic,
+  MARK: Highlighted,
+  U: Underlined,
+  INS: Underlined,
+  DEL: Strikethrough,
+  S: Strikethrough,
+  SUP: Superscript,
+  SUB: Subscript,
+  SMALL: Small,
+  ABBR: DottedUnderline,
+  KBD: CodeStyle,
+  SAMP: CodeStyle,
+  CODE: CodeStyle,
+  PRE: CodeStyle,
+};
 
 const ComponentRenderError = "Cannot render the component";
